@@ -70,8 +70,8 @@ A deep learning-based web application that detects breast cancer from histopatho
 
   1. **Clone the repository**
      ```bash
-     git clone https://github.com/your-username/breast-cancer-classification.git
-     cd breast-cancer-classification
+     git clone https://github.com/your-username/mini-project.git
+     cd mini-project
      
   2. **Create a virtual environment (optional but recommended)**
     
