@@ -5,143 +5,90 @@ from PIL import Image
 import gdown
 import os
 
-# 🔹 Replace with your actual Google Drive File ID
-FILE_ID = "124Fo29-Vt7UVeCLdRnJl75dZda3wRn9X"  # <-- Update with your actual ID
+# Creative gradient background and custom CSS
+st.markdown("""
+    <style>
+        /* Gradient background */
+        body, .stApp {
+            background: linear-gradient(120deg, #f8ffae, #43c6ac, #191654);
+        }
+        /* Sidebar Styling */
+        .css-1d391kg {background: #eee; border-radius: 16px;}
+        .css-hxt7ib {border-right: 2px solid #43c6ac;}
+        /* Footer Styling */
+        .footer {
+            background: #191654;
+            color: #f8ffae;
+            text-align: center;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# Sidebar navigation with emoji icons
+st.sidebar.markdown("### 🧭 Navigation", unsafe_allow_html=True)
+st.sidebar.markdown("---")
+page = st.sidebar.radio(
+    "Jump to:",
+    ["🏠 Home", "📤 Upload & Predict", "ℹ️ About"],
+    index=0
+)
+
+# Model download and load logic
+FILE_ID = "124Fo29-Vt7UVeCLdRnJl75dZda3wRn9X"
 URL = f"https://drive.google.com/uc?export=download&id={FILE_ID}"
 OUTPUT_PATH = "model.h5"
 
-# 🔹 Function to download and load the model
 @st.cache_resource
 def load_model():
-    if not os.path.exists(OUTPUT_PATH):  # Check if model already exists
-        st.write("📥 Downloading model...")
+    if not os.path.exists(OUTPUT_PATH):
+        st.info("📥 Downloading model...")
         try:
             gdown.download(URL, OUTPUT_PATH, quiet=False)
-            st.write("✅ Model downloaded successfully!")
+            st.success("✅ Model downloaded successfully!")
         except Exception as e:
             st.error(f"❌ Model download failed: {e}")
             return None
-
     if os.path.exists(OUTPUT_PATH):
         model = tf.keras.models.load_model(OUTPUT_PATH)
-        st.write(f"✅ Model loaded! Expected input shape: {model.input_shape}")
+        st.success(f"✅ Model loaded! Expected input: (None, 48, 48, 3)")
         return model
     else:
         st.error("❌ Model file not found after download.")
         return None
 
-# 🔹 Load the trained model
 model = load_model()
 if model is None:
     st.stop()
 
-# 🔹 Define class labels
 CLASS_NAMES = ["Benign", "Malignant"]
 
-# 🔹 Function to preprocess image
 def preprocess_image(image):
-    image = image.convert("RGB")  # Ensure 3 color channels
-    image = image.resize((48, 48))  # Resize to match model input (48x48 pixels)
-    image = np.array(image, dtype=np.float32) / 255.0  # Normalize pixel values (0-1)
-    image = np.expand_dims(image, axis=0)  # Add batch dimension (1, 48, 48, 3)
-    
+    image = image.convert("RGB")
+    image = image.resize((48, 48))
+    image = np.array(image, dtype=np.float32) / 255.0
+    image = np.expand_dims(image, axis=0)
     return image
-
-# 🔹 Sidebar Navigation
-st.sidebar.title("🔍 Navigation")
-st.sidebar.write("Use the menu below to navigate.")
-page = st.sidebar.radio("Select a Page:", ["🏠 Home", "📤 Upload & Predict", "ℹ️ About"])
 
 if page == "🏠 Home":
     st.title("🏠 Breast Cancer Classifier")
-    st.write("""
-    Welcome! This app classifies breast cancer cell images as **Benign** or **Malignant**.
-    
-    🔹 **How It Works:**  
-    - Upload an image of a breast cancer cell  
-    - The model analyzes the image  
-    - It predicts if the cell is **Benign** or **Malignant**
-    
-    👉 Click on "Upload & Predict" in the sidebar to start!
-    """)
+    st.markdown("""
+        <div style='background: #fffbe6; padding: 16px; border-radius: 12px; border-left: 6px solid #43c6ac'>
+            Welcome! This app classifies breast cancer cell images as <b>Benign</b> or <b>Malignant</b>.<br>
+            <ul>
+                <li>🔸 <b>Upload</b> an image of a breast cancer cell</li>
+                <li>🔸 The model <b>analyzes</b> the image</li>
+                <li>🔸 It predicts if the cell is <b>Benign</b> or <b>Malignant</b></li>
+            </ul>
+        </div>
+        <br>
+        👉 <b>Click</b> <span style="background: #43c6ac; color: white; border-radius: 8px; padding: 2px 8px">Upload & Predict</span> in the sidebar to start!
+    """, unsafe_allow_html=True)
 
 elif page == "📤 Upload & Predict":
     st.title("📤 Upload & Predict")
-
-    # 🔹 File uploader
-    uploaded_file = st.file_uploader("Upload an Image", type=["jpg", "png", "jpeg"])
-
-    if uploaded_file:
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            image = Image.open(uploaded_file)
-            st.image(image, caption="🖼 Uploaded Image", use_column_width=True)
-
-        with col2:
-            st.write("✅ **Image uploaded successfully!**")
-            st.write(f"📏 **Image Size:** {image.size}")
-
-        # Preprocess the image
-        processed_image = preprocess_image(image)
-
-        # Debugging: Print shape before prediction
-        st.write(f"📌 **Processed Image Shape:** {processed_image.shape}")
-
-        # Prediction with progress bar
-        with st.spinner("🧐 Analyzing image... Please wait..."):
-            progress_bar = st.progress(0)
-            for percent in range(100):
-                progress_bar.progress(percent + 1)
-            
-            prediction = model.predict(processed_image)
-            class_index = np.argmax(prediction)
-            confidence = np.max(prediction) * 100
-
-        # Display results with emojis
-        result = "🟢 **Benign** 😊" if class_index == 0 else "🔴 **Malignant** 😔"
-        st.subheader(f"📌 Prediction: {result}")
-        st.write(f"✅ **Confidence: {confidence:.2f}%**")
-
-        # Display additional message based on prediction
-        if class_index == 0:  # Benign
-            st.success("🟢 No cancer detected. Live happy! 😊")
-        else:  # Malignant
-            st.error("🔴 Cancer detected. Please reach out to a doctor immediately. 🚨")
-
-elif page == "ℹ️ About":
-    st.title("ℹ️ About This Project")
-    st.write("""
-    **Breast Cancer Classification App**  
-    - This application uses a **Convolutional Neural Network (CNN)** to classify breast cancer cell images.  
-    - It was trained using a **Custom CNN model** with TensorFlow & Keras.  
-    - The app is deployed using **Streamlit Cloud**.  
-      
-    **👩‍💻 Developed by:** Likith G & Shakthi Prasad 
-    **📅 Year:** 2025  
-    **🔗 GitHub:** [Your GitHub Repo](https://github.com/Likith-gowda15/breast-cancer-classification)  
-    """)
-
-# 🔹 Custom Footer
-st.markdown(
-    """
-    <style>
-    .footer {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        background-color: #1c1c1e;
-        text-align: center;
-        padding: 10px;
-        color: white;
-    }
-    </style>
-    <div class="footer">
-        <p>© 2025 Breast Cancer Classifier | Developed by Likith G & Shakthi Prasad</p>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-
+    with st.expander("How to use this tool", expanded=False):
+        st.write("""
+            Upload a clear image of a breast cancer cell to receive quick predictions.<br>
+            Supported formats: JPG, PNG, JPEG.
+        """)
+    uploaded_file = st.file_uploader
