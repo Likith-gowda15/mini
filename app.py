@@ -99,7 +99,7 @@ elif page == "ℹ️ About":
     - It was trained using a **Custom CNN model** with TensorFlow & Keras.  
     - The app is deployed using **Streamlit Cloud**.  
       
-    **👩‍💻 Developed by:** Likith G & Shakthi Prasad 
+    **👩‍💻 Developed by:** Likith G & Team
     **📅 Year:** 2025  
     **🔗 GitHub:** Your GitHub Repo  
     """)
